@@ -1,4 +1,4 @@
-# 🎬 CineMatch — 영화 별점 예측 서비스
+# CineMatch — 영화 별점 예측 서비스
 
 > Neural Collaborative Filtering 기반 영화 추천 모델을 FastAPI로 서빙하고 웹 UI로 시각화한 프로젝트
 
@@ -6,7 +6,7 @@
 
 ---
 
-## 📌 프로젝트 소개
+## 프로젝트 소개
 
 유저 ID와 영화 ID를 입력하면 딥러닝 모델이 예상 별점(0~5)을 실시간으로 예측해주는 웹 서비스입니다.
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 🖼️ 서비스 화면
+## 서비스 화면
 
 > `localhost:8000` 접속 시 나타나는 UI
 
@@ -28,7 +28,7 @@
 
 ---
 
-## 🏗️ 기술 스택
+## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
@@ -40,7 +40,7 @@
 
 ---
 
-## 🤖 모델 선택 이유 — 왜 NCF인가?
+## 모델 선택 이유 — 왜 NCF인가?
 
 ### NCF (Neural Collaborative Filtering) 구조
 
@@ -76,7 +76,7 @@ Output        : sigmoid × 5 → 0.5 단위 반올림
 
 ---
 
-## 📂 프로젝트 구조
+## 프로젝트 구조
 
 ```
 movie_recommendation_part1/
@@ -96,7 +96,7 @@ movie_recommendation_part1/
 
 ---
 
-## 🚀 실행 방법
+## 실행 방법
 
 ### 로컬 실행 (Poetry)
 
@@ -129,7 +129,7 @@ docker run -p 8000:8000 cinematch
 
 ---
 
-## 🔌 API 명세
+## API 명세
 
 ### `POST /predict/`
 
@@ -154,7 +154,7 @@ docker run -p 8000:8000 cinematch
 
 ---
 
-## 💡 배운 것 / 회고
+## 배운 것 / 회고
 
 ### 전체 파이프라인 흐름 이해
 
@@ -176,7 +176,7 @@ docker run -p 8000:8000 cinematch
 
 ---
 
-## 🗺️ 다음 목표
+## 다음 목표
 
 - [ ] AWS EC2/ECS 배포 → 공개 URL로 누구나 접속 가능하게
 - [ ] LLM 기반 영화 설명/추천 이유 생성 기능 추가
@@ -185,7 +185,7 @@ docker run -p 8000:8000 cinematch
 
 ---
 
-## 📎 참고
+## 참고
 
 - [FastAPI 공식 문서](https://fastapi.tiangolo.com/)
 - [Neural Collaborative Filtering 논문](https://arxiv.org/abs/1708.05031)
