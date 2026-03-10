@@ -19,12 +19,16 @@
 ## 서비스 화면
 
 > `localhost:8000` 접속 시 나타나는 UI
-> <img width="1568" height="728" alt="image" src="https://github.com/user-attachments/assets/16885aa3-2acd-4ec1-9174-131da4934df3" />
+> <img width="2848" height="1342" alt="image" src="https://github.com/user-attachments/assets/7dde3fd4-0f7a-4c7d-8f6d-af0e57bddbdb" />
+> <img width="2842" height="1352" alt="image" src="https://github.com/user-attachments/assets/451eca10-5335-40e0-95e9-2e36e18bde3d" />
+
+
 
   
 - 유저/영화 ID 입력 → 별점 예측
 - 세션 통계 (평균·최고·최저 별점)
-- 예측 히스토리 (최근 30건)
+- 예측 히스토리 (최근 조회 항목)
+- 동일한 영화 ID에 대한 고객의 평가, 동일한 고객의 전반적인 영화 만족도 항목
 - 모델 구조 정보 표시
 
 ---
