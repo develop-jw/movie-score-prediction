@@ -20,6 +20,8 @@
 ## 서비스 화면
 
 > `localhost:8000` 접속 시 나타나는 UI
+> <img width="1568" height="728" alt="image" src="https://github.com/user-attachments/assets/16885aa3-2acd-4ec1-9174-131da4934df3" />
+
 
 - 유저/영화 ID 입력 → 별점 예측
 - 세션 통계 (평균·최고·최저 별점)
