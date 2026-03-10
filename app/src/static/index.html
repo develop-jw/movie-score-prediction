@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineMatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+KR:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #080810;
+      --surface:  #0f0f1a;
+      --card:     #14141f;
+      --border:   rgba(255,255,255,0.06);
+      --gold:     #f0c060;
+      --gold2:    #d4763b;
+      --red:      #e05555;
+      --green:    #50d890;
+      --text:     #ddddf0;
+      --muted:    #5a5a72;
+      --glow:     rgba(240,192,96,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    /* grain */
+    body::after {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 9000;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,8,16,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+    .header-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px; letter-spacing: 3px;
+      background: linear-gradient(90deg, var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 2px; color: var(--muted);
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 4px 10px; border-radius: 4px;
+    }
+    .status-dot {
+      display: inline-block; width: 6px; height: 6px;
+      background: var(--green); border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      position: relative; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(240,192,96,0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 20% 80%, rgba(212,118,59,0.05) 0%, transparent 60%);
+    }
+    .hero-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; letter-spacing: 4px;
+      color: var(--gold); text-transform: uppercase;
+      margin-bottom: 20px;
+      opacity: 0; animation: fadeUp 0.7s 0.1s ease forwards;
+    }
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 10vw, 96px);
+      line-height: 0.95; letter-spacing: 4px;
+      margin-bottom: 20px;
+      opacity: 0; animation: fadeUp 0.7s 0.2s ease forwards;
+    }
+    .hero-title span {
+      background: linear-gradient(135deg, var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+      font-size: 15px; color: var(--muted); line-height: 1.7;
+      max-width: 480px; margin: 0 auto 40px;
+      opacity: 0; animation: fadeUp 0.7s 0.3s ease forwards;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .main {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 24px 100px;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* ── PREDICT CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      opacity: 0; animation: fadeUp 0.7s 0.4s ease forwards;
+    }
+    .card-header {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .card-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--gold2), var(--gold));
+      display: grid; place-items: center; font-size: 16px;
+      flex-shrink: 0;
+    }
+    .card-title { font-size: 15px; font-weight: 500; }
+    .card-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .card-body { padding: 28px; }
+
+    /* ── INPUTS ── */
+    .input-group { margin-bottom: 20px; }
+    .input-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--muted); text-transform: uppercase;
+      display: flex; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .input-label span { color: var(--border); }
+
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      font-size: 16px; pointer-events: none;
+    }
+    input[type="number"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 22px; font-weight: 300;
+      padding: 14px 16px 14px 46px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    input::-webkit-inner-spin-button,
+    input::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input:focus {
+      border-color: rgba(240,192,96,0.35);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+    input.error { border-color: rgba(224,85,85,0.4); }
+    .input-hint {
+      font-size: 11px; color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 6px;
+    }
+    .input-error {
+      font-size: 11px; color: var(--red);
+      margin-top: 6px; display: none;
+    }
+
+    /* ── BUTTON ── */
+    .predict-btn {
+      width: 100%; margin-top: 8px;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold2), var(--gold));
+      border: none; border-radius: 10px;
+      color: #0a0808;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px; font-weight: 500; letter-spacing: 1px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      position: relative; overflow: hidden;
+    }
+    .predict-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .predict-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(240,192,96,0.2); }
+    .predict-btn:hover::before { opacity: 1; }
+    .predict-btn:active { transform: none; }
+    .predict-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #0a0808;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .loading .spinner { display: block; }
+    .loading .btn-text { opacity: 0.7; }
+
+    /* ── RESULT ── */
+    .result-panel {
+      margin-top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: none;
+    }
+    .result-panel.show { display: block; animation: fadeUp 0.4s ease; }
+    .result-panel.is-error { border-color: rgba(224,85,85,0.25); }
+
+    .result-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .result-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 2px;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .result-score-wrap { text-align: right; }
+    .result-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 56px; line-height: 1;
+      background: linear-gradient(135deg, var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .result-score-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px; color: var(--muted);
+    }
+
+    /* star bar */
+    .star-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+    .star-seg {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: var(--border);
+      transition: background 0.4s;
+    }
+    .star-seg.filled { background: linear-gradient(90deg, var(--gold2), var(--gold)); }
+    .star-seg.half {
+      background: linear-gradient(90deg, var(--gold2) 50%, var(--border) 50%);
+    }
+
+    .result-tags {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .tag {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 10px;
+    }
+
+    .error-text { color: var(--red); font-size: 13px; line-height: 1.6; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+    /* stats card */
+    .stats-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      opacity: 0; animation: fadeUp 0.7s 0.5s ease forwards;
+    }
+    .stats-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-key { font-size: 12px; color: var(--muted); }
+    .stat-val {
+      font-family: 'DM Mono', monospace;
+      font-size: 14px; color: var(--text);
+    }
+    .stat-val.gold {
+      background: linear-gradient(90deg, var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* history */
+    .history-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px; overflow: hidden;
+      opacity: 0; animation: fadeUp 0.7s 0.6s ease forwards;
+    }
+    .history-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .history-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--muted); text-transform: uppercase;
+    }
+    .clear-btn {
+      background: none; border: none;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 1px;
+      color: var(--muted); cursor: pointer;
+      padding: 4px 8px; border-radius: 4px;
+      transition: color 0.2s;
+    }
+    .clear-btn:hover { color: var(--red); }
+
+    .history-list { max-height: 340px; overflow-y: auto; }
+    .history-list::-webkit-scrollbar { width: 4px; }
+    .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .history-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      animation: fadeUp 0.3s ease;
+      transition: background 0.15s;
+    }
+    .history-item:hover { background: var(--surface); }
+    .history-item:last-child { border-bottom: none; }
+    .history-ids { font-size: 12px; color: var(--muted); }
+    .history-ids strong { color: var(--text); font-weight: 400; }
+    .history-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .history-score {
+      font-family: 'Bebas Neue', sans-serif; font-size: 22px;
+      background: linear-gradient(90deg, var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .history-stars { font-size: 10px; color: var(--gold); letter-spacing: 1px; }
+
+    .empty-state {
+      padding: 40px 20px; text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; color: var(--muted); letter-spacing: 1px;
+    }
+
+    /* ── MODEL INFO ── */
+    .model-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px;
+      opacity: 0; animation: fadeUp 0.7s 0.7s ease forwards;
+    }
+    .model-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 2.5px;
+      color: var(--muted); text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .model-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 2px;
+      background: linear-gradient(90deg, var(--gold2), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .model-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 780px) {
+      .main { grid-template-columns: 1fr; }
+      .sidebar { order: -1; }
+      .stats-card, .model-card { display: none; }
+      header { padding: 0 20px; }
+      .hero { padding: 50px 20px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-logo">CineMatch</div>
+    <div class="header-badge">
+      <span class="status-dot"></span>NCF Model v1.0
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <p class="hero-eyebrow">Neural Collaborative Filtering</p>
+    <h1 class="hero-title">당신의 취향을<br><span>예측합니다</span></h1>
+    <p class="hero-sub">딥러닝 기반 협업 필터링 모델이 유저와 영화의 잠재 벡터를 분석해 예상 별점을 예측합니다.</p>
+  </section>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- LEFT: PREDICT -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">🎯</div>
+          <div>
+            <div class="card-title">별점 예측</div>
+            <div class="card-desc">유저 ID와 영화 ID를 입력하세요</div>
+          </div>
+        </div>
+        <div class="card-body">
+
+          <div class="input-group">
+            <div class="input-label">
+              User ID <span>1 – 671</span>
+            </div>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="number" id="userId" placeholder="e.g. 42" min="1" max="671" />
+            </div>
+            <div class="input-hint">등록된 유저 수: 671명</div>
+            <div class="input-error" id="userError">유저 ID는 1~671 범위여야 합니다.</div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-label">
+              Movie ID <span>1 – 163,949</span>
+            </div>
+            <div class="input-wrap">
+              <span class="input-icon">🎬</span>
+              <input type="number" id="movieId" placeholder="e.g. 318" min="1" max="163949" />
+            </div>
+            <div class="input-hint">등록된 영화 수: 163,949편</div>
+            <div class="input-error" id="movieError">영화 ID는 1~163,949 범위여야 합니다.</div>
+          </div>
+
+          <button class="predict-btn" id="predictBtn" onclick="predict()">
+            <div class="spinner"></div>
+            <span class="btn-text">⚡ 별점 예측하기</span>
+          </button>
+
+          <!-- RESULT -->
+          <div class="result-panel" id="resultPanel">
+            <div class="result-top">
+              <div>
+                <div class="result-label">예측 결과</div>
+                <div class="star-bar" id="starBar">
+                  <div class="star-seg"></div>
+                  <div class="star-seg"></div>
+                  <div class="star-seg"></div>
+                  <div class="star-seg"></div>
+                  <div class="star-seg"></div>
+                </div>
+              </div>
+              <div class="result-score-wrap">
+                <div class="result-score" id="resultScore">—</div>
+                <div class="result-score-sub">/ 5.0</div>
+              </div>
+            </div>
+            <div class="result-tags" id="resultTags"></div>
+            <div class="error-text" id="errorText"></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- Stats -->
+      <div class="stats-card">
+        <div class="stats-title">세션 통계</div>
+        <div class="stat-row">
+          <span class="stat-key">총 예측 횟수</span>
+          <span class="stat-val" id="statCount">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">평균 예측 별점</span>
+          <span class="stat-val gold" id="statAvg">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">최고 예측 별점</span>
+          <span class="stat-val gold" id="statMax">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-key">최저 예측 별점</span>
+          <span class="stat-val" id="statMin">—</span>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="history-card">
+        <div class="history-header">
+          <span class="history-title">최근 예측</span>
+          <button class="clear-btn" onclick="clearHistory()">초기화</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="empty-state">아직 예측 기록이 없습니다</div>
+        </div>
+      </div>
+
+      <!-- Model Info -->
+      <div class="model-card">
+        <div class="model-title">사용 모델</div>
+        <div class="model-name">NCF</div>
+        <div class="model-desc">
+          Neural Collaborative Filtering.<br>
+          MLP + GMF 구조로 유저·아이템 잠재 벡터를 학습해 비선형 상호작용을 포착합니다.<br><br>
+          Embed dim: 64 · MLP: (32, 32) · Dropout: 0.2
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:8000';
+    let history = [];
+
+    // ── Predict ──
+    async function predict() {
+      const userInput  = document.getElementById('userId');
+      const movieInput = document.getElementById('movieId');
+      const btn        = document.getElementById('predictBtn');
+
+      const userId  = parseInt(userInput.value);
+      const movieId = parseInt(movieInput.value);
+
+      // Validate
+      let valid = true;
+      if (!userId || userId < 1 || userId > 671) {
+        showFieldError('userError', userInput, true); valid = false;
+      } else { showFieldError('userError', userInput, false); }
+
+      if (!movieId || movieId < 1 || movieId > 163949) {
+        showFieldError('movieError', movieInput, true); valid = false;
+      } else { showFieldError('movieError', movieInput, false); }
+
+      if (!valid) return;
+
+      // Loading
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        const res = await fetch(`${API}/predict/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, movieId })
+        });
+        if (!res.ok) throw new Error(`서버 오류 (HTTP ${res.status})`);
+
+        const data = await res.json();
+        showResult(data.predictedRating, userId, movieId);
+        addHistory(userId, movieId, data.predictedRating);
+
+      } catch (err) {
+        showError(`연결 실패: ${err.message}\nFastAPI 서버가 실행 중인지 확인하세요 (python main.py)`);
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    }
+
+    // ── Show result ──
+    function showResult(rating, userId, movieId) {
+      const panel = document.getElementById('resultPanel');
+      document.getElementById('resultScore').textContent = rating.toFixed(1);
+      document.getElementById('errorText').textContent = '';
+      document.getElementById('errorText').style.display = 'none';
+
+      // Star bar
+      const segs = document.querySelectorAll('.star-seg');
+      segs.forEach((seg, i) => {
+        seg.className = 'star-seg';
+        if (rating >= i + 1) seg.classList.add('filled');
+        else if (rating >= i + 0.5) seg.classList.add('half');
+      });
+
+      // Tags
+      const label = ratingLabel(rating);
+      document.getElementById('resultTags').innerHTML = `
+        <span class="tag">👤 User #${userId}</span>
+        <span class="tag">🎬 Movie #${movieId}</span>
+        <span class="tag">${label}</span>
+      `;
+
+      panel.className = 'result-panel show';
+    }
+
+    function showError(msg) {
+      const panel = document.getElementById('resultPanel');
+      document.getElementById('resultScore').textContent = '!';
+      document.getElementById('resultTags').innerHTML = '';
+      const et = document.getElementById('errorText');
+      et.textContent = msg; et.style.display = 'block';
+      document.querySelectorAll('.star-seg').forEach(s => s.className = 'star-seg');
+      panel.className = 'result-panel show is-error';
+    }
+
+    function showFieldError(id, input, show) {
+      document.getElementById(id).style.display = show ? 'block' : 'none';
+      input.classList.toggle('error', show);
+    }
+
+    function ratingLabel(r) {
+      if (r >= 4.5) return '🏆 강력 추천';
+      if (r >= 3.5) return '👍 추천';
+      if (r >= 2.5) return '😐 보통';
+      if (r >= 1.5) return '👎 비추천';
+      return '💀 비추천';
+    }
+
+    // ── History ──
+    function addHistory(userId, movieId, rating) {
+      history.unshift({ userId, movieId, rating });
+      if (history.length > 30) history.pop();
+      renderHistory();
+      updateStats();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('historyList');
+      if (history.length === 0) {
+        list.innerHTML = '<div class="empty-state">아직 예측 기록이 없습니다</div>';
+        return;
+      }
+      list.innerHTML = history.map(h => `
+        <div class="history-item">
+          <div class="history-ids">
+            유저 <strong>#${h.userId}</strong> → 영화 <strong>#${h.movieId}</strong>
+          </div>
+          <div class="history-right">
+            <span class="history-score">${h.rating.toFixed(1)}</span>
+            <span class="history-stars">${starStr(h.rating)}</span>
+          </div>
+        </div>`).join('');
+    }
+
+    function starStr(r) {
+      return '★'.repeat(Math.floor(r)) + (r % 1 >= 0.5 ? '½' : '') + '☆'.repeat(5 - Math.ceil(r));
+    }
+
+    function clearHistory() {
+      history = [];
+      renderHistory();
+      updateStats();
+    }
+
+    // ── Stats ──
+    function updateStats() {
+      const ratings = history.map(h => h.rating);
+      document.getElementById('statCount').textContent = ratings.length;
+      if (ratings.length === 0) {
+        document.getElementById('statAvg').textContent = '—';
+        document.getElementById('statMax').textContent = '—';
+        document.getElementById('statMin').textContent = '—';
+        return;
+      }
+      const avg = ratings.reduce((a,b) => a+b, 0) / ratings.length;
+      document.getElementById('statAvg').textContent = avg.toFixed(2) + ' ★';
+      document.getElementById('statMax').textContent = Math.max(...ratings).toFixed(1) + ' ★';
+      document.getElementById('statMin').textContent = Math.min(...ratings).toFixed(1) + ' ★';
+    }
+
+    // Enter key
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') predict(); });
+  </script>
+</body>
+</html>
