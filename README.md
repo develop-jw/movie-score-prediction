@@ -1,4 +1,4 @@
-# CineMatch — 영화 별점 예측 서비스
+# **영화 별점 예측 서비스**
 
 > Neural Collaborative Filtering 기반 영화 추천 모델을 FastAPI로 서빙하고 웹 UI로 시각화한 프로젝트
 
