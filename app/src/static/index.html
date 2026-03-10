@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineMatch — 고객 별점 예측</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#f8f7f4;--surface:#ffffff;--border:#e4e2dc;--primary:#1c1c2e;
+      --accent:#c8602a;--accent2:#2b5fa6;--text:#1c1c2e;--muted:#7a7a8c;
+      --gold:#c8a84b;--green:#2d8c5e;--red:#c0392b;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:'Inter','Noto Sans KR',sans-serif;font-weight:400;min-height:100vh;}
+    header{position:sticky;top:0;z-index:100;background:var(--primary);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:64px;}
+    .header-logo{font-family:'Playfair Display',serif;font-size:22px;color:#fff;letter-spacing:1px;}
+    .header-logo span{color:var(--gold);}
+    .header-nav{display:flex;align-items:center;gap:28px;}
+    .header-nav a{font-size:13px;color:rgba(255,255,255,0.55);text-decoration:none;letter-spacing:0.5px;transition:color 0.2s;}
+    .header-nav a:hover{color:#fff;}
+    .status-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;margin-right:6px;box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
+    .header-status{font-size:12px;color:rgba(255,255,255,0.45);}
+    .hero{background:var(--primary);padding:72px 48px 80px;position:relative;overflow:hidden;}
+    .hero::before{content:'';position:absolute;right:-80px;top:-80px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(200,96,42,0.12) 0%,transparent 70%);}
+    .hero-inner{max-width:700px;position:relative;z-index:1;}
+    .hero-eyebrow{font-size:11px;letter-spacing:4px;color:var(--gold);text-transform:uppercase;margin-bottom:18px;font-weight:500;}
+    .hero-title{font-family:'Playfair Display',serif;font-size:clamp(40px,6vw,68px);line-height:1.1;color:#fff;margin-bottom:18px;}
+    .hero-title span{color:var(--gold);}
+    .hero-sub{font-size:15px;color:rgba(255,255,255,0.5);line-height:1.8;max-width:500px;}
+    .section{max-width:1100px;margin:0 auto;padding:56px 24px;}
+    .section-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-weight:700;}
+    .section-title{font-family:'Inter',sans-serif;font-size:26px;font-weight:700;color:var(--text);margin-bottom:32px;}
+    .predict-section{background:var(--bg);}
+    .predict-layout{display:grid;grid-template-columns:1fr 360px;gap:24px;align-items:start;}
+    @media(max-width:800px){.predict-layout{grid-template-columns:1fr;}}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+    .card-header{padding:22px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+    .card-icon{width:34px;height:34px;border-radius:8px;background:var(--primary);display:grid;place-items:center;font-size:15px;flex-shrink:0;}
+    .card-title{font-size:14px;font-weight:700;color:var(--text);}
+    .card-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+    .card-body{padding:28px;}
+    .input-group{margin-bottom:20px;}
+    .input-label{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;margin-bottom:8px;font-weight:700;}
+    .input-wrap{position:relative;}
+    .input-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;}
+    input[type="number"]{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter','Noto Sans KR',sans-serif;font-size:20px;font-weight:700;padding:13px 14px 13px 44px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;-moz-appearance:textfield;appearance:textfield;}
+    input::-webkit-inner-spin-button,input::-webkit-outer-spin-button{-webkit-appearance:none;}
+    input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(200,96,42,0.1);}
+    input.error{border-color:var(--red);}
+    .input-hint{font-size:11px;color:var(--muted);margin-top:5px;}
+    .input-error{font-size:11px;color:var(--red);margin-top:5px;display:none;}
+    .predict-btn{width:100%;margin-top:6px;padding:15px;background:var(--primary);border:none;border-radius:10px;color:#fff;font-family:'Inter','Noto Sans KR',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.2s,transform 0.15s;}
+    .predict-btn:hover{background:#2d2d48;transform:translateY(-1px);}
+    .predict-btn:active{transform:none;}
+    .predict-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+    .spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,0.25);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:none;}
+    .loading .spinner{display:block;}.loading .btn-text{opacity:0.7;}
+    .result-panel{margin-top:20px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:22px;display:none;}
+    .result-panel.show{display:block;animation:fadeUp 0.3s ease;}
+    .result-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .result-label{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px;font-weight:700;}
+    .star-bar{display:flex;gap:5px;}
+    .star-seg{flex:1;height:6px;border-radius:3px;background:var(--border);transition:background 0.3s;}
+    .star-seg.filled{background:var(--gold);}
+    .star-seg.half{background:linear-gradient(90deg,var(--gold) 50%,var(--border) 50%);}
+    .result-score-wrap{text-align:right;}
+    .result-score{font-family:'Inter',sans-serif;font-size:44px;font-weight:800;color:var(--accent);line-height:1;}
+    .result-score-sub{font-size:12px;color:var(--muted);}
+    .result-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+    .tag{font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--bg);border:1px solid var(--border);color:var(--text);}
+    .error-text{font-size:12px;color:var(--red);display:none;margin-top:8px;white-space:pre-line;}
+    .sidebar{display:flex;flex-direction:column;gap:16px;}
+    .stats-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;}
+    .stats-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:16px;}
+    .stat-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+    .stat-row:last-child{border-bottom:none;}
+    .stat-key{color:var(--muted);}
+    .stat-val{font-weight:700;color:var(--text);}
+    .stat-val.gold{color:var(--gold);}
+    .history-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px;}
+    .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+    .history-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+    .clear-btn{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:inherit;padding:2px 6px;border-radius:4px;transition:background 0.2s;}
+    .clear-btn:hover{background:var(--bg);}
+    .history-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;}
+    .history-item{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:12px;}
+    .history-ids{color:var(--text);}
+    .history-ids strong{color:var(--accent);}
+    .history-right{display:flex;align-items:center;gap:6px;}
+    .history-score{font-weight:900;font-size:15px;color:var(--accent);}
+    .history-stars{font-size:11px;color:var(--gold);}
+    .empty-state{text-align:center;color:var(--muted);font-size:13px;padding:20px;}
+    .image-section{width:100%;display:grid;grid-template-columns:1fr 1fr;background:var(--primary);overflow:hidden;min-height:360px;}
+    .image-left{display:flex;flex-direction:column;justify-content:center;padding:72px 64px;color:#fff;position:relative;z-index:1;}
+    .image-left .eyebrow{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:16px;font-weight:700;font-family:'Inter',sans-serif;}
+    .image-left h2{font-family:'Playfair Display',serif;font-size:clamp(28px,3.2vw,44px);line-height:1.2;margin-bottom:18px;}
+    .image-left p{font-size:14px;color:rgba(255,255,255,0.55);line-height:1.9;font-family:'Inter',sans-serif;}
+    .image-right{position:relative;overflow:hidden;min-height:360px;}
+    .image-right img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0.85;filter:grayscale(10%) brightness(0.75);display:block;}
+    .image-right::before{content:'';position:absolute;left:0;top:0;width:60px;height:100%;background:linear-gradient(to right,var(--primary),transparent);z-index:1;}
+    @media(max-width:768px){.image-section{grid-template-columns:1fr;}.image-right{min-height:220px;}}
+    .analysis-section{background:#f0efe9;}
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+    @media(max-width:768px){.charts-grid{grid-template-columns:1fr;}}
+    .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;}
+    .chart-card-header{margin-bottom:20px;}
+    .chart-card-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px;}
+    .chart-card-title{font-size:16px;font-weight:700;color:var(--text);font-family:'Inter',sans-serif;}
+    .chart-card-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+    .mode-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;}
+    .mode-tag.movie{background:#fdf0e8;color:var(--accent);border:1px solid rgba(200,96,42,0.2);}
+    .mode-tag.customer{background:#e8f0fb;color:var(--accent2);border:1px solid rgba(43,95,166,0.2);}
+    .chart-area{position:relative;height:220px;}
+    .chart-empty{display:flex;align-items:center;justify-content:center;height:180px;border:2px dashed var(--border);border-radius:10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.6;padding:20px;}
+    .chart-stats{margin-top:16px;}
+    .chart-stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+    .chart-stat-row:last-child{border-bottom:none;}
+    .chart-stat-key{color:var(--muted);}
+    .chart-stat-val{font-weight:700;color:var(--text);}
+    footer{background:var(--primary);padding:48px 48px 32px;color:rgba(255,255,255,0.4);}
+    .footer-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;margin-bottom:40px;}
+    @media(max-width:768px){.footer-inner{grid-template-columns:1fr;}}
+    .footer-logo{font-family:'Playfair Display',serif;font-size:20px;color:#fff;margin-bottom:12px;}
+    .footer-logo span{color:var(--gold);}
+    .footer-desc{font-size:13px;line-height:1.8;max-width:280px;}
+    .footer-col-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.6);font-weight:700;margin-bottom:16px;}
+    .footer-info{font-size:13px;line-height:2;}
+    .footer-info strong{color:rgba(255,255,255,0.7);}
+    .footer-divider{max-width:1100px;margin:0 auto 24px;border:none;border-top:1px solid rgba(255,255,255,0.08);}
+    .footer-bottom{max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">Cine<span>Match</span></div>
+  <nav class="header-nav">
+    <span class="header-status"><span class="status-dot"></span>모델 서빙 중</span>
+    <a href="#predict">예측</a>
+    <a href="#analysis">분석</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">Movie Rating Prediction</div>
+    <h1 class="hero-title">고객의 취향을<br><span>예측합니다</span></h1>
+    <p class="hero-sub">딥러닝 기반 협업 필터링 모델이 고객과 영화의 잠재 벡터를 분석해<br>예상 별점과 취향 패턴을 시각화합니다.</p>
+  </div>
+</section>
+
+<div id="predict" class="predict-section">
+  <div class="section">
+    <div class="section-label">별점 예측</div>
+    <div class="section-title">유저와 영화를 입력하세요</div>
+    <div class="predict-layout">
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">🎬</div>
+            <div>
+              <div class="card-title">별점 예측</div>
+              <div class="card-desc">유저 ID와 영화 ID를 입력해 예측 별점을 확인하세요</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="input-group">
+              <div class="input-label">User ID <span>1 – 671</span></div>
+              <div class="input-wrap">
+                <span class="input-icon">👤</span>
+                <input type="number" id="userId" placeholder="예: 1" min="1" max="671" />
+              </div>
+              <div class="input-hint">등록된 유저 수: 671명</div>
+              <div class="input-error" id="userError">유효한 유저 ID를 입력하세요 (1–671)</div>
+            </div>
+            <div class="input-group">
+              <div class="input-label">Movie ID <span>1 – 163,949</span></div>
+              <div class="input-wrap">
+                <span class="input-icon">🎞</span>
+                <input type="number" id="movieId" placeholder="예: 318" min="1" max="163949" />
+              </div>
+              <div class="input-hint">등록된 영화 수: 163,949편</div>
+              <div class="input-error" id="movieError">유효한 영화 ID를 입력하세요 (1–163,949)</div>
+            </div>
+            <button class="predict-btn" id="predictBtn" onclick="predict()">
+              <div class="spinner"></div>
+              <span class="btn-text">⚡ 별점 예측하기</span>
+            </button>
+            <div class="result-panel" id="resultPanel">
+              <div class="result-top">
+                <div>
+                  <div class="result-label">예측 결과</div>
+                  <div class="star-bar">
+                    <div class="star-seg"></div><div class="star-seg"></div>
+                    <div class="star-seg"></div><div class="star-seg"></div>
+                    <div class="star-seg"></div>
+                  </div>
+                </div>
+                <div class="result-score-wrap">
+                  <div class="result-score" id="resultScore">—</div>
+                  <div class="result-score-sub">/ 5.0</div>
+                </div>
+              </div>
+              <div class="result-tags" id="resultTags"></div>
+              <div class="error-text" id="errorText"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="history-card">
+            <div class="history-header">
+              <span class="history-title">최근 조회</span>
+              <button class="clear-btn" onclick="clearHistory()">초기화</button>
+            </div>
+            <div class="history-list" id="historyList">
+              <div class="empty-state">아직 예측 기록이 없습니다</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="stats-card">
+          <div class="stats-title">세션 통계</div>
+          <div class="stat-row"><span class="stat-key">총 예측 횟수</span><span class="stat-val" id="statCount">0</span></div>
+          <div class="stat-row"><span class="stat-key">평균 예측 별점</span><span class="stat-val gold" id="statAvg">—</span></div>
+          <div class="stat-row"><span class="stat-key">최고 예측 별점</span><span class="stat-val gold" id="statMax">—</span></div>
+          <div class="stat-row"><span class="stat-key">최저 예측 별점</span><span class="stat-val" id="statMin">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="image-section">
+  <div class="image-left">
+    <div class="eyebrow">About the Model</div>
+    <h2>데이터가 말하는<br>당신의 취향</h2>
+    <p>671명의 유저와 163,949편의 영화 데이터를 학습한<br>딥러닝 모델이 숨겨진 취향 패턴을 분석합니다.</p>
+  </div>
+  <div class="image-right">
+    <img src="https://images.unsplash.com/photo-1595769816263-9b910be24d5f?w=900&auto=format&fit=crop&q=85" alt="cinema seats" />
+  </div>
+</div>
+
+<div id="analysis" class="analysis-section">
+  <div class="section">
+    <div class="section-label">취향 분석</div>
+    <div class="section-title">평점 분포 & 취향도</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-label">영화 분석</div>
+          <div class="chart-card-title">영화별 고객 평점 분포</div>
+          <div class="chart-card-sub">동일 영화에 대한 여러 고객의 예측 평점을 비교합니다</div>
+        </div>
+        <div id="movieModeTag"></div>
+        <div id="movieChartArea"><div class="chart-empty">영화 ID를 고정하고<br>여러 유저로 예측해보세요</div></div>
+        <div class="chart-stats" id="movieStats"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div class="chart-card-label">고객 분석</div>
+          <div class="chart-card-title">고객별 영화 취향도</div>
+          <div class="chart-card-sub">동일 고객의 여러 영화에 대한 취향 패턴을 보여줍니다</div>
+        </div>
+        <div id="customerModeTag"></div>
+        <div id="customerChartArea"><div class="chart-empty">유저 ID를 고정하고<br>여러 영화로 예측해보세요</div></div>
+        <div class="chart-stats" id="customerStats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-logo">Cine<span>Match</span></div>
+      <div class="footer-desc">MovieLens 데이터셋 기반 NCF 모델을 구현하고 FastAPI와 Docker로 배포한 영화 별점 예측 서비스입니다.</div>
+    </div>
+    <div>
+      <div class="footer-col-title">사용 모델</div>
+      <div class="footer-info">
+        <strong>NCF</strong><br>Neural Collaborative Filtering<br>MLP + GMF 구조<br><br>
+        <strong>Embed dim</strong> · 64<br><strong>MLP layers</strong> · (32, 32)<br>
+        <strong>Dropout</strong> · 0.2<br><strong>Output</strong> · sigmoid × 5
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">데이터셋</div>
+      <div class="footer-info">
+        <strong>MovieLens</strong><br>유저 수 · 671명<br>영화 수 · 163,949편<br><br>
+        <strong>Framework</strong><br>PyTorch · FastAPI<br>Docker · Poetry
+      </div>
+    </div>
+  </div>
+  <hr class="footer-divider">
+  <div class="footer-bottom">
+    <span>© 2025 CineMatch. NCF-based Movie Rating Prediction.</span>
+    <span>Powered by PyTorch · FastAPI · Docker</span>
+  </div>
+</footer>
+
+<script>
+  const API='http://localhost:8000';
+  let historyData=[];
+  const movieData={},customerData={};
+  let movieChart=null,customerChart=null;
+
+  async function predict(){
+    const userInput=document.getElementById('userId');
+    const movieInput=document.getElementById('movieId');
+    const btn=document.getElementById('predictBtn');
+    const userId=parseInt(userInput.value);
+    const movieId=parseInt(movieInput.value);
+    let valid=true;
+    if(!userId||userId<1||userId>671){showFieldError('userError',userInput,true);valid=false;}
+    else{showFieldError('userError',userInput,false);}
+    if(!movieId||movieId<1||movieId>163949){showFieldError('movieError',movieInput,true);valid=false;}
+    else{showFieldError('movieError',movieInput,false);}
+    if(!valid)return;
+    btn.disabled=true;btn.classList.add('loading');
+    try{
+      const res=await fetch(`${API}/predict/`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId,movieId})});
+      if(!res.ok)throw new Error(`서버 오류 (HTTP ${res.status})`);
+      const data=await res.json();
+      showResult(data.predictedRating,userId,movieId);
+      addHistory(userId,movieId,data.predictedRating);
+      updateMovieChart(movieId,userId,data.predictedRating);
+      updateCustomerChart(userId,movieId,data.predictedRating);
+    }catch(err){showError(`연결 실패: ${err.message}\nFastAPI 서버가 실행 중인지 확인하세요.`);}
+    finally{btn.disabled=false;btn.classList.remove('loading');}
+  }
+
+  function showResult(rating,userId,movieId){
+    const panel=document.getElementById('resultPanel');
+    document.getElementById('resultScore').textContent=rating.toFixed(1);
+    document.getElementById('errorText').style.display='none';
+    document.querySelectorAll('.star-seg').forEach((seg,i)=>{
+      seg.className='star-seg';
+      if(rating>=i+1)seg.classList.add('filled');
+      else if(rating>=i+0.5)seg.classList.add('half');
+    });
+    document.getElementById('resultTags').innerHTML=`<span class="tag">👤 User #${userId}</span><span class="tag">🎬 Movie #${movieId}</span><span class="tag">${ratingLabel(rating)}</span>`;
+    panel.className='result-panel show';
+  }
+
+  function showError(msg){
+    const panel=document.getElementById('resultPanel');
+    document.getElementById('resultScore').textContent='!';
+    document.getElementById('resultTags').innerHTML='';
+    const et=document.getElementById('errorText');
+    et.textContent=msg;et.style.display='block';
+    document.querySelectorAll('.star-seg').forEach(s=>s.className='star-seg');
+    panel.className='result-panel show';
+  }
+
+  function showFieldError(id,input,show){
+    document.getElementById(id).style.display=show?'block':'none';
+    input.classList.toggle('error',show);
+  }
+
+  function ratingLabel(r){
+    if(r>=4.5)return'🏆 강력 추천';
+    if(r>=3.5)return'👍 추천';
+    if(r>=2.5)return'😐 보통';
+    return'👎 비추천';
+  }
+
+  function addHistory(userId,movieId,rating){
+    historyData.unshift({userId,movieId,rating});
+    if(historyData.length>30)historyData.pop();
+    renderHistory();updateStats();
+  }
+
+  function renderHistory(){
+    const list=document.getElementById('historyList');
+    if(!historyData.length){list.innerHTML='<div class="empty-state">아직 예측 기록이 없습니다</div>';return;}
+    list.innerHTML=historyData.map(h=>`<div class="history-item"><div class="history-ids">유저 <strong>#${h.userId}</strong> → 영화 <strong>#${h.movieId}</strong></div><div class="history-right"><span class="history-score">${h.rating.toFixed(1)}</span><span class="history-stars">${starStr(h.rating)}</span></div></div>`).join('');
+  }
+
+  function starStr(r){return'★'.repeat(Math.floor(r))+(r%1>=0.5?'½':'')+'☆'.repeat(5-Math.ceil(r));}
+
+  function clearHistory(){historyData=[];renderHistory();updateStats();}
+
+  function updateStats(){
+    const ratings=historyData.map(h=>h.rating);
+    document.getElementById('statCount').textContent=ratings.length;
+    if(!ratings.length){['statAvg','statMax','statMin'].forEach(id=>document.getElementById(id).textContent='—');return;}
+    const avg=ratings.reduce((a,b)=>a+b,0)/ratings.length;
+    document.getElementById('statAvg').textContent=avg.toFixed(2)+' ★';
+    document.getElementById('statMax').textContent=Math.max(...ratings).toFixed(1)+' ★';
+    document.getElementById('statMin').textContent=Math.min(...ratings).toFixed(1)+' ★';
+  }
+
+  function updateMovieChart(movieId,userId,score){
+    if(!movieData[movieId])movieData[movieId]=[];
+    movieData[movieId].push({userId,score});
+    const entries=movieData[movieId];
+    document.getElementById('movieModeTag').innerHTML=`<span class="mode-tag movie">영화 #${movieId} 고정</span>`;
+    const area=document.getElementById('movieChartArea');
+    area.innerHTML='<div class="chart-area"><canvas id="movieCanvas"></canvas></div>';
+    if(movieChart)movieChart.destroy();
+    movieChart=new Chart(document.getElementById('movieCanvas').getContext('2d'),{
+      type:'bar',
+      data:{labels:entries.map(e=>`유저 #${e.userId}`),datasets:[{data:entries.map(e=>e.score),backgroundColor:entries.map(e=>e.userId===userId?'rgba(200,96,42,0.85)':'rgba(200,96,42,0.3)'),borderColor:'rgba(200,96,42,1)',borderWidth:1.5,borderRadius:6}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:5,ticks:{stepSize:1},grid:{color:'#eee'}},x:{grid:{display:false}}}}
+    });
+    const avg=(entries.reduce((s,e)=>s+e.score,0)/entries.length).toFixed(2);
+    document.getElementById('movieStats').innerHTML=`<div class="chart-stat-row"><span class="chart-stat-key">평균 평점</span><span class="chart-stat-val">${avg} ★</span></div><div class="chart-stat-row"><span class="chart-stat-key">최고 평점</span><span class="chart-stat-val">${Math.max(...entries.map(e=>e.score))} ★</span></div><div class="chart-stat-row"><span class="chart-stat-key">최저 평점</span><span class="chart-stat-val">${Math.min(...entries.map(e=>e.score))} ★</span></div><div class="chart-stat-row"><span class="chart-stat-key">예측 횟수</span><span class="chart-stat-val">${entries.length}회</span></div>`;
+  }
+
+  function updateCustomerChart(userId,movieId,score){
+    if(!customerData[userId])customerData[userId]=[];
+    customerData[userId].push({movieId,score});
+    const entries=customerData[userId];
+    document.getElementById('customerModeTag').innerHTML=`<span class="mode-tag customer">유저 #${userId} 고정</span>`;
+    const area=document.getElementById('customerChartArea');
+    area.innerHTML='<div class="chart-area"><canvas id="customerCanvas"></canvas></div>';
+    if(customerChart)customerChart.destroy();
+    customerChart=new Chart(document.getElementById('customerCanvas').getContext('2d'),{
+      type:'line',
+      data:{labels:entries.map(e=>`영화 #${e.movieId}`),datasets:[{data:entries.map(e=>e.score),borderColor:'#2b5fa6',backgroundColor:'rgba(43,95,166,0.08)',pointBackgroundColor:entries.map(e=>e.movieId===movieId?'#2b5fa6':'rgba(43,95,166,0.4)'),pointRadius:6,tension:0.3,fill:true}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:5,ticks:{stepSize:1},grid:{color:'#eee'}},x:{grid:{display:false}}}}
+    });
+    const avg=(entries.reduce((s,e)=>s+e.score,0)/entries.length).toFixed(2);
+    document.getElementById('customerStats').innerHTML=`<div class="chart-stat-row"><span class="chart-stat-key">평균 취향도</span><span class="chart-stat-val">${avg} ★</span></div><div class="chart-stat-row"><span class="chart-stat-key">예측 영화 수</span><span class="chart-stat-val">${entries.length}편</span></div>`;
+  }
+
+  document.addEventListener('keydown',e=>{if(e.key==='Enter')predict();});
+</script>
+</body>
+</html>
